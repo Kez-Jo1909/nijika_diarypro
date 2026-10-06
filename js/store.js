@@ -21,8 +21,10 @@ export function defaultState() {
   return {
     profile: {
       name: "Kez",
-      signature: "今天也想好好记下一点什么。"
+      signature: "今天也想好好记下一点什么。",
+      avatar: ""
     },
+    avatars: {},
     settings: {
       baseUrl: "",
       apiKey: "",
@@ -65,6 +67,7 @@ export function load() {
     return {
       profile: { ...base.profile, ...(parsed.profile || {}) },
       settings: { ...base.settings, ...(parsed.settings || {}) },
+      avatars: parsed.avatars && typeof parsed.avatars === "object" ? parsed.avatars : {},
       posts: (Array.isArray(parsed.posts) ? parsed.posts : base.posts).map(normalizePost),
       visits: Array.isArray(parsed.visits) ? parsed.visits.slice(0, 30) : []
     };

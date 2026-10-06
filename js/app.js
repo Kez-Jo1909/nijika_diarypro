@@ -226,8 +226,17 @@ function visiblePosts(state) {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+function storedAvatar(authorId, state) {
+  if (authorId === ME) return state.profile.avatar || "";
+  return state.avatars?.[authorId] || "";
+}
+
 function avatarHtml(authorId, state, variant) {
   const sizeClass = variant === "mini" ? "mini-avatar" : variant === "small" ? "avatar small" : "avatar";
+  const photo = storedAvatar(authorId, state);
+  if (photo) {
+    return `<div class="${sizeClass} has-photo" style="background-image:url(&quot;${photo}&quot;)" role="img" aria-label="头像"></div>`;
+  }
   if (authorId === ME) {
     const letter = (state.profile.name || "我").slice(0, 1);
     return `<div class="${sizeClass}">${escapeHtml(letter)}</div>`;
@@ -239,6 +248,71 @@ function avatarHtml(authorId, state, variant) {
   const color = character?.color || "#8eb8dc";
   const letter = (character?.shortName || "?").slice(0, 1);
   return `<div class="${sizeClass}" style="background:${escapeHtml(color)}">${escapeHtml(letter)}</div>`;
+}
+
+function paintMyAvatar(state) {
+  const el = document.querySelector("#my-avatar");
+  const photo = state.profile.avatar || "";
+  el.classList.toggle("has-photo", Boolean(photo));
+  el.style.backgroundImage = photo ? `url("${photo}")` : "";
+  el.textContent = photo ? "" : (state.profile.name || "我").slice(0, 1);
+  document.querySelector("#reset-my-avatar").hidden = !photo;
+}
+
+function chooseAvatar(ownerId) {
+  const input = document.querySelector("#avatar-file");
+  input.dataset.owner = ownerId;
+  input.click();
+}
+
+function readAvatarFile(file) {
+  if (!file) return Promise.reject(new Error("没有选到图片"));
+  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) {
+    return Promise.reject(new Error("请选 png、jpg、webp 或 gif"));
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    return Promise.reject(new Error("图片超过 8MB"));
+  }
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const blobUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      const size = 256;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      const scale = Math.max(size / img.width, size / img.height);
+      const width = img.width * scale;
+      const height = img.height * scale;
+      ctx.drawImage(img, (size - width) / 2, (size - height) / 2, width, height);
+      URL.revokeObjectURL(blobUrl);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(blobUrl);
+      reject(new Error("这张图读不了"));
+    };
+    img.src = blobUrl;
+  });
+}
+
+function setAvatar(ownerId, dataUrl) {
+  try {
+    commit((state) => {
+      if (ownerId === ME) {
+        state.profile.avatar = dataUrl;
+        return;
+      }
+      state.avatars = state.avatars || {};
+      if (dataUrl) state.avatars[ownerId] = dataUrl;
+      else delete state.avatars[ownerId];
+    });
+  } catch (err) {
+    toast("头像存不下，浏览器空间满了");
+    return false;
+  }
+  return true;
 }
 
 function renderPost(post, state) {
@@ -315,7 +389,7 @@ function render() {
   const signInput = document.querySelector("#profile-sign");
   if (document.activeElement !== nameInput) nameInput.value = state.profile.name;
   if (document.activeElement !== signInput) signInput.value = state.profile.signature;
-  document.querySelector("#my-avatar").textContent = (state.profile.name || "我").slice(0, 1);
+  paintMyAvatar(state);
   document.querySelector("#call-friend").checked = state.settings.autoReact;
   document.querySelector("#call-label").textContent =
     `发表后叫${activeCharacters().map((item) => item.shortName).join("、") || "好友"}来看`;
@@ -349,6 +423,8 @@ function render() {
           <button class="ghost" type="button" data-friend="${escapeHtml(character.id)}" data-act="shuoshuo" ${ui.friendBusy ? "disabled" : ""}>发说说</button>
           <button class="ghost" type="button" data-friend="${escapeHtml(character.id)}" data-act="diary" ${ui.friendBusy ? "disabled" : ""}>写日志</button>
           <button class="ghost" type="button" data-friend="${escapeHtml(character.id)}" data-act="filter">${ui.authorFilter === character.id ? "看全部" : "只看她"}</button>
+          <button class="ghost" type="button" data-friend="${escapeHtml(character.id)}" data-act="avatar">换头像</button>
+          ${storedAvatar(character.id, state) ? `<button class="ghost" type="button" data-friend="${escapeHtml(character.id)}" data-act="reset-avatar">默认头像</button>` : ""}
         </div>
       </div>
     </div>
@@ -540,6 +616,7 @@ function importData(file) {
         profile: { ...current.profile, ...(parsed.profile || {}) },
         settings: { ...current.settings, ...(parsed.settings || {}) },
         posts: parsed.posts,
+        avatars: parsed.avatars && typeof parsed.avatars === "object" ? parsed.avatars : {},
         visits: Array.isArray(parsed.visits) ? parsed.visits : []
       });
       // 再走一遍 load，把缺字段补齐后写回。
@@ -585,6 +662,17 @@ function bind() {
       render();
       return;
     }
+    if (button.dataset.act === "avatar") {
+      chooseAvatar(character.id);
+      return;
+    }
+    if (button.dataset.act === "reset-avatar") {
+      if (setAvatar(character.id, "")) {
+        toast(`已恢复${character.shortName}的默认头像`);
+        render();
+      }
+      return;
+    }
     friendPublish(character, button.dataset.act);
   });
 
@@ -604,6 +692,29 @@ function bind() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (file) importData(file);
+  });
+
+  document.querySelector("#pick-my-avatar").addEventListener("click", () => chooseAvatar(ME));
+  document.querySelector("#reset-my-avatar").addEventListener("click", () => {
+    if (setAvatar(ME, "")) {
+      toast("已恢复默认头像");
+      render();
+    }
+  });
+  document.querySelector("#avatar-file").addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    const ownerId = event.target.dataset.owner || ME;
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const dataUrl = await readAvatarFile(file);
+      if (setAvatar(ownerId, dataUrl)) {
+        toast("头像已更新");
+        render();
+      }
+    } catch (err) {
+      toast(err.message || "头像没换成");
+    }
   });
 
   document.querySelector("#call-friend").addEventListener("change", (event) => {
