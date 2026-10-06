@@ -389,6 +389,7 @@ function render() {
   const signInput = document.querySelector("#profile-sign");
   if (document.activeElement !== nameInput) nameInput.value = state.profile.name;
   if (document.activeElement !== signInput) signInput.value = state.profile.signature;
+  document.querySelector("#top-name").textContent = state.profile.name || "我";
   paintMyAvatar(state);
   document.querySelector("#call-friend").checked = state.settings.autoReact;
   document.querySelector("#call-label").textContent =
@@ -442,7 +443,7 @@ function render() {
   titleInput.hidden = ui.composeKind !== "diary";
   document.querySelector("#composer-text").placeholder = ui.composeKind === "diary"
     ? "今天发生了什么……"
-    : "分享新鲜事……";
+    : "说点什么吧";
 }
 
 function publishPost(event) {

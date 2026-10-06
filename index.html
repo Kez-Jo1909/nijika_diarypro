@@ -10,29 +10,38 @@
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark">空间</span>
-      <span class="brand-sub" id="brand-sub">好友虹夏也会来逛</span>
+      <span class="top-link">个人中心</span>
     </div>
     <div class="top-actions">
-      <button class="ghost" id="open-settings" type="button">接口设置</button>
+      <span id="top-name">Kez</span>
+      <button class="top-btn" id="open-settings" type="button">接口设置</button>
     </div>
   </header>
 
-  <main class="layout">
-    <aside class="card profile" id="profile">
+  <section class="banner">
+    <div class="banner-main">
       <button class="avatar-pick" id="pick-my-avatar" type="button" aria-label="更换我的头像">
-        <span class="avatar" id="my-avatar">K</span>
+        <span class="avatar banner-avatar" id="my-avatar">K</span>
       </button>
-      <div class="profile-body">
+      <div class="banner-text">
         <input class="profile-name" id="profile-name" maxlength="20" aria-label="昵称" />
         <textarea class="profile-sign" id="profile-sign" maxlength="80" rows="2" aria-label="个性签名"></textarea>
-        <div class="stats">
-          <div><b id="stat-talk">0</b><span>说说</span></div>
-          <div><b id="stat-diary">0</b><span>日志</span></div>
-          <div><b id="stat-comment">0</b><span>留言</span></div>
-        </div>
         <p class="hint">点头像就能换。昵称和签名直接改，都存在这台浏览器里。</p>
         <button class="text-btn" id="reset-my-avatar" type="button" hidden>恢复默认头像</button>
       </div>
+    </div>
+    <div class="banner-stats stats">
+      <div><b id="stat-talk">0</b><span>说说</span></div>
+      <div><b id="stat-diary">0</b><span>日志</span></div>
+      <div><b id="stat-comment">0</b><span>留言</span></div>
+    </div>
+  </section>
+
+  <main class="layout">
+    <aside class="card side-nav">
+      <button type="button" class="filter active" data-filter="all">全部动态</button>
+      <button type="button" class="filter" data-filter="shuoshuo">说说</button>
+      <button type="button" class="filter" data-filter="diary">日志</button>
     </aside>
 
     <section>
@@ -42,7 +51,7 @@
           <button type="button" class="tab" data-kind="diary">日志</button>
         </div>
         <input id="diary-title" type="text" maxlength="40" placeholder="日志标题" hidden />
-        <textarea id="composer-text" rows="4" maxlength="4000" placeholder="分享新鲜事……"></textarea>
+        <textarea id="composer-text" rows="2" maxlength="4000" placeholder="说点什么吧"></textarea>
         <div class="composer-bar">
           <label class="check">
             <input type="checkbox" id="call-friend" checked />
@@ -54,11 +63,6 @@
 
       <div class="feed-head">
         <strong id="feed-title">全部动态</strong>
-        <div class="filters">
-          <button type="button" class="filter active" data-filter="all">全部</button>
-          <button type="button" class="filter" data-filter="shuoshuo">说说</button>
-          <button type="button" class="filter" data-filter="diary">日志</button>
-        </div>
       </div>
       <div id="feed"></div>
     </section>

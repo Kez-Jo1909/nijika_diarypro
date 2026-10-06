@@ -33,17 +33,16 @@ button, input, textarea {
 button { cursor: pointer; }
 
 .topbar {
-  height: 64px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
-  background: rgba(242, 253, 255, 0.94);
-  border-bottom: 1px solid var(--card-line);
+  padding: 0 22px;
+  background: #2ec6d6;
+  color: #fff;
   position: sticky;
   top: 0;
   z-index: 5;
-  backdrop-filter: blur(12px);
 }
 
 .brand {
@@ -54,23 +53,81 @@ button { cursor: pointer; }
 
 .brand-mark {
   font-weight: 700;
-  font-size: 22px;
+  font-size: 18px;
   letter-spacing: 1px;
-  color: var(--link);
+  color: #fff;
 }
 
-.brand-sub {
+.top-link {
+  margin-left: 18px;
+  font-size: 14px;
+  color: #fff;
+}
+
+.top-actions { display: flex; align-items: center; gap: 12px; color: #fff; }
+
+.top-btn {
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: transparent;
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.banner {
+  width: min(1080px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 22px 4px 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.banner-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.banner-text { min-width: 0; flex: 1; }
+
+.banner .avatar-pick { margin: 0; }
+
+.banner-avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 8px;
+  font-size: 32px;
+}
+
+.banner .profile-name,
+.banner .profile-sign {
+  text-align: left;
+  background: transparent;
+}
+
+.banner .profile-name { font-size: 22px; }
+
+.banner .profile-sign {
+  min-height: 36px;
   color: var(--muted);
-  font-size: 12px;
 }
 
-.top-actions { display: flex; gap: 8px; }
+.banner-stats {
+  background: #fff;
+  border: 1px solid var(--card-line);
+  border-radius: 8px;
+  padding: 12px 18px;
+  min-width: 180px;
+}
 
 .layout {
   width: min(1080px, calc(100% - 32px));
   margin: 18px auto 48px;
   display: grid;
-  grid-template-columns: 230px 1fr 240px;
+  grid-template-columns: 168px 1fr 230px;
   gap: 16px;
   align-items: start;
 }
@@ -135,6 +192,13 @@ button { cursor: pointer; }
 .avatar-pick:hover::after,
 .avatar-pick:focus-visible::after {
   opacity: 1;
+}
+
+.avatar.banner-avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 8px;
+  font-size: 32px;
 }
 
 .avatar.nijika {
@@ -430,12 +494,30 @@ dialog::backdrop { background: rgba(20, 40, 60, 0.35); }
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+.side-nav {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.side-nav .filter {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 4px;
+  color: var(--ink);
+  padding: 9px 12px;
+}
+
+.side-nav .filter.active {
+  background: #e7f8fb;
+  color: var(--link);
+  font-weight: 700;
+}
+
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
-  .profile { display: grid; grid-template-columns: 96px 1fr; text-align: left; gap: 8px 12px; align-items: start; }
-  .avatar-pick { margin: 0; }
-  .profile-name, .profile-sign { text-align: left; }
-  .profile-body { min-width: 0; }
-  .stats { grid-column: 1 / -1; }
-  .hint { grid-column: 1 / -1; }
+  .banner { flex-direction: column; align-items: stretch; }
+  .banner-stats { justify-content: space-around; }
 }
