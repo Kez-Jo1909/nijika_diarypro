@@ -1,0 +1,17 @@
+# 本地运行数据：空间内容、密钥、导出备份都不进仓库
+data/
+exports/
+backup/
+config.json
+config.local.json
+*.local.json
+*backup*.json
+nijika-qzone-export*.json
+
+.DS_Store
+Thumbs.db
+*.log
+__pycache__/
+*.pyc
+.venv/
+node_modules/

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>我的空间</title>
+  <link rel="stylesheet" href="css/qzone.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">空间</span>
+      <span class="brand-sub" id="brand-sub">好友虹夏也会来逛</span>
+    </div>
+    <div class="top-actions">
+      <button class="ghost" id="open-settings" type="button">接口设置</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="card profile" id="profile">
+      <div class="avatar" id="my-avatar">K</div>
+      <div>
+        <input class="profile-name" id="profile-name" maxlength="20" aria-label="昵称" />
+        <textarea class="profile-sign" id="profile-sign" maxlength="80" rows="2" aria-label="个性签名"></textarea>
+        <div class="stats">
+          <div><b id="stat-talk">0</b><span>说说</span></div>
+          <div><b id="stat-diary">0</b><span>日志</span></div>
+          <div><b id="stat-comment">0</b><span>留言</span></div>
+        </div>
+        <p class="hint">昵称和签名点一下就能改，存在这台浏览器里。</p>
+      </div>
+    </aside>
+
+    <section>
+      <form class="card composer" id="composer">
+        <div class="tabs">
+          <button type="button" class="tab active" data-kind="shuoshuo">说说</button>
+          <button type="button" class="tab" data-kind="diary">日志</button>
+        </div>
+        <input id="diary-title" type="text" maxlength="40" placeholder="日志标题" hidden />
+        <textarea id="composer-text" rows="4" maxlength="4000" placeholder="分享新鲜事……"></textarea>
+        <div class="composer-bar">
+          <label class="check">
+            <input type="checkbox" id="call-friend" checked />
+            <span id="call-label">发表后叫虹夏来看</span>
+          </label>
+          <button class="orange" id="publish" type="submit">发表</button>
+        </div>
+      </form>
+
+      <div class="feed-head">
+        <strong id="feed-title">全部动态</strong>
+        <div class="filters">
+          <button type="button" class="filter active" data-filter="all">全部</button>
+          <button type="button" class="filter" data-filter="shuoshuo">说说</button>
+          <button type="button" class="filter" data-filter="diary">日志</button>
+        </div>
+      </div>
+      <div id="feed"></div>
+    </section>
+
+    <aside>
+      <section class="card friends">
+        <h2 class="side-title">好友</h2>
+        <div id="friend-list"></div>
+      </section>
+      <section class="card side-block" style="margin-top: 12px;">
+        <h2 class="side-title">最近来访</h2>
+        <div id="visits"></div>
+      </section>
+    </aside>
+  </main>
+
+  <dialog id="settings" class="settings">
+    <form id="settings-form">
+      <h2>模型接口</h2>
+      <p class="note">
+        填中转站或官方的 OpenAI 兼容地址，例如 <code>https://你的中转站/v1</code>。
+        密钥只留在本机浏览器。如果点测试时提示跨域，需要中转站允许来源 <code>http://localhost:8080</code>。
+      </p>
+      <label class="field">接口地址
+        <input id="set-base" type="text" placeholder="https://example.com/v1" autocomplete="off" />
+      </label>
+      <label class="field">API 密钥
+        <input id="set-key" type="password" placeholder="sk-..." autocomplete="off" />
+      </label>
+      <label class="field">模型名
+        <input id="set-model" type="text" placeholder="供应商文档里的模型 id" autocomplete="off" />
+      </label>
+      <label class="check">
+        <input id="set-auto" type="checkbox" />
+        我发新动态时，好友自动点赞或留言
+      </label>
+      <div class="settings-actions">
+        <button class="ghost" id="export-data" type="button">导出备份</button>
+        <button class="ghost" id="import-data" type="button">导入备份</button>
+        <button class="ghost" id="test-api" type="button">测试连接</button>
+        <button class="ghost" id="close-settings" type="button">关闭</button>
+        <button class="primary" type="submit">保存</button>
+      </div>
+      <input id="import-file" type="file" accept="application/json" hidden />
+    </form>
+  </dialog>
+
+  <div id="toast" role="status"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
