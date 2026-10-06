@@ -20,15 +20,97 @@ function errorMessage(status, bodyText) {
   return snippet ? `${status} ${snippet}` : `请求失败（${status}）`;
 }
 
-function extractText(data) {
-  const message = data.choices?.[0]?.message;
-  if (!message) return "";
-  if (typeof message.content === "string" && message.content.trim()) return message.content;
-  // 少数中转把正文放在 reasoning_content，内容为空时再看一眼
-  if (typeof message.reasoning_content === "string") return message.reasoning_content;
-  if (Array.isArray(message.content)) {
-    return message.content.map((part) => part.text || "").join("");
+function readPart(part) {
+  if (typeof part === "string") return part;
+  if (Array.isArray(part)) {
+    return part.map((item) => item?.text || item?.content || "").join("");
   }
+  return "";
+}
+
+function tryJson(text) {
+  try {
+    const value = JSON.parse(text);
+    if (value && typeof value === "object") return value;
+  } catch {
+    // 后面还有别的拆法，这里先不算失败
+  }
+  return null;
+}
+
+function looksLikeSse(text) {
+  return /^data:/m.test(text);
+}
+
+// 不少中转站无视 stream:false，HTTP 200 时仍按 SSE 吐 data: {...}。
+function assembleSse(text) {
+  let content = "";
+  let reasoning = "";
+  let last = null;
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("data:")) continue;
+    const payload = trimmed.slice(5).trim();
+    if (!payload || payload === "[DONE]") continue;
+    const obj = tryJson(payload);
+    if (!obj) continue;
+    last = obj;
+    const choice = obj.choices?.[0];
+    const delta = choice?.delta || choice?.message;
+    if (delta) {
+      content += readPart(delta.content);
+      reasoning += readPart(delta.reasoning_content);
+    }
+    if (typeof choice?.text === "string") content += choice.text;
+  }
+  if ((content || reasoning).trim()) {
+    return { choices: [{ message: { content, reasoning_content: reasoning } }] };
+  }
+  if (last) return last;
+  throw new Error("接口按流式返回了，但没有读到正文");
+}
+
+export function parseCompletionBody(bodyText, contentType = "") {
+  const text = String(bodyText || "").replace(/^\uFEFF/, "").trim();
+  if (!text) throw new Error("接口返回是空的");
+
+  if (/text\/event-stream/i.test(contentType) || looksLikeSse(text)) {
+    return assembleSse(text);
+  }
+
+  const direct = tryJson(text);
+  if (direct) return direct;
+
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start >= 0 && end > start) {
+    const sliced = tryJson(text.slice(start, end + 1));
+    if (sliced) return sliced;
+  }
+
+  if (/<!doctype html|<html[\s>]/i.test(text)) {
+    throw new Error("接口返回了一张网页，不是聊天数据。地址应填中转站文档里的 API 根路径，一般以 /v1 结尾，不要填网站首页。");
+  }
+
+  const snippet = text.replace(/\s+/g, " ").slice(0, 140);
+  throw new Error(`接口返回的不是 JSON：${snippet}`);
+}
+
+function extractText(data) {
+  const root = data?.data?.choices ? data.data : data;
+  if (root?.error) {
+    const msg = root.error.message || root.error.msg || root.error;
+    throw new Error(typeof msg === "string" ? msg : "接口返回了错误");
+  }
+  const choice = root?.choices?.[0];
+  if (!choice) return "";
+  const message = choice.message || choice.delta || {};
+  const content = readPart(message.content).trim();
+  if (content) return content;
+  // 少数中转把正文放在 reasoning_content，内容为空时再看一眼
+  const reasoning = readPart(message.reasoning_content).trim();
+  if (reasoning) return reasoning;
+  if (typeof choice.text === "string" && choice.text.trim()) return choice.text;
   return "";
 }
 
@@ -39,6 +121,7 @@ async function postCompletion(url, apiKey, body) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
         Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify(body)
@@ -63,11 +146,7 @@ async function postCompletion(url, apiKey, body) {
     throw new Error(message);
   }
 
-  try {
-    return JSON.parse(bodyText);
-  } catch {
-    throw new Error("接口返回的不是 JSON");
-  }
+  return parseCompletionBody(bodyText, response.headers.get("content-type") || "");
 }
 
 export async function completeChat({ baseUrl, apiKey, model, messages, temperature, maxTokens }) {
