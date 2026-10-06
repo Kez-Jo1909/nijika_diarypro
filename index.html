@@ -26,7 +26,7 @@
       <div class="banner-text">
         <input class="profile-name" id="profile-name" maxlength="20" aria-label="昵称" />
         <textarea class="profile-sign" id="profile-sign" maxlength="80" rows="2" aria-label="个性签名"></textarea>
-        <p class="hint">点头像就能换。昵称和签名直接改，都存在这台浏览器里。</p>
+        <p class="hint">点头像就能换。昵称、签名和接口设置写在项目的 data/space.json。</p>
         <button class="text-btn" id="reset-my-avatar" type="button" hidden>恢复默认头像</button>
       </div>
     </div>
@@ -84,7 +84,7 @@
       <h2>模型接口</h2>
       <p class="note">
         填中转站或官方的 OpenAI 兼容地址，例如 <code>https://你的中转站/v1</code>。
-        密钥只留在本机浏览器。如果点测试时提示跨域，需要中转站允许来源 <code>http://localhost:8080</code>。
+        密钥写在项目的 data/space.json，不会进 git。如果点测试时提示跨域，需要中转站允许来源 <code>http://localhost:8080</code>。
       </p>
       <label class="field">接口地址
         <input id="set-base" type="text" placeholder="https://example.com/v1" autocomplete="off" />

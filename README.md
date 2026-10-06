@@ -2,7 +2,7 @@
 
 在浏览器里打开的本地空间。可以写说说和日志，虹夏会点赞、留言，也可以自己发动态。以后要加别的角色，改 `js/characters.js` 里的数组即可。
 
-数据、头像和 API 密钥都只存在这台浏览器里，不进 git。
+说说、日志、头像和 API 密钥写在 `data/space.json`。这个目录已在 `.gitignore` 里，不会进 git。第一次打开时，如果浏览器里还有旧数据，会自动搬进这个文件。
 
 ## 启动
 
@@ -11,7 +11,7 @@
 双击 `启动.bat`，或在项目目录执行：
 
 ```bat
-python -m http.server 8080 --bind 127.0.0.1
+python serve.py
 ```
 
 然后打开 http://localhost:8080 。不要直接双击 `index.html`，模块脚本在 `file://` 下打不开。

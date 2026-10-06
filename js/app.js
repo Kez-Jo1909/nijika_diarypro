@@ -1,6 +1,6 @@
 import { activeCharacters, findCharacter } from "./characters.js";
 import { dateContext, completeChat, parseJsonObject } from "./llm.js";
-import { commit, load, newId, save } from "./store.js";
+import { commit, hydrate, load, newId, save } from "./store.js";
 
 const ME = "me";
 
@@ -309,7 +309,7 @@ function setAvatar(ownerId, dataUrl) {
       else delete state.avatars[ownerId];
     });
   } catch (err) {
-    toast("头像存不下，浏览器空间满了");
+    toast("头像没写进 data/space.json");
     return false;
   }
   return true;
@@ -569,7 +569,7 @@ function saveSettings(event) {
   });
   document.querySelector("#settings").close();
   render();
-  toast("接口设置已留在这台浏览器里");
+  toast("接口设置已写到 data/space.json");
 }
 
 async function testApi() {
@@ -725,7 +725,16 @@ function bind() {
   });
 }
 
-// 第一次打开时把欢迎说说写进 localStorage，刷新后时间不会变。
-save(load());
-bind();
-render();
+window.addEventListener("space-save-error", () => {
+  toast("没能写到 data/space.json，请用启动脚本打开页面");
+});
+
+hydrate().then((result) => {
+  bind();
+  render();
+  if (result.migrated) toast("浏览器里的旧空间已写到 data/space.json");
+}).catch((err) => {
+  bind();
+  render();
+  toast(err.message || "读不到 data/space.json");
+});

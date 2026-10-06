@@ -1,7 +1,9 @@
-// 全部动态都在这台浏览器的 localStorage 里。
-// 没有账号服务器；换浏览器或清站点数据会丢，所以页面里可以导出 JSON。
+// 空间写在项目的 data/space.json。localStorage 只用来把旧数据搬过去一次。
 
 const STORAGE_KEY = "nijika-qzone-v1";
+let memory = null;
+let writing = false;
+let pending = false;
 
 function welcomePost(now) {
   return {
@@ -58,27 +60,92 @@ function normalizePost(post) {
   };
 }
 
+function normalize(parsed) {
+  const base = defaultState();
+  if (!parsed || typeof parsed !== "object") return base;
+  return {
+    profile: { ...base.profile, ...(parsed.profile || {}) },
+    settings: { ...base.settings, ...(parsed.settings || {}) },
+    avatars: parsed.avatars && typeof parsed.avatars === "object" ? parsed.avatars : {},
+    posts: (Array.isArray(parsed.posts) ? parsed.posts : base.posts).map(normalizePost),
+    visits: Array.isArray(parsed.visits) ? parsed.visits.slice(0, 30) : []
+  };
+}
+
 export function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultState();
-    const parsed = JSON.parse(raw);
-    const base = defaultState();
-    return {
-      profile: { ...base.profile, ...(parsed.profile || {}) },
-      settings: { ...base.settings, ...(parsed.settings || {}) },
-      avatars: parsed.avatars && typeof parsed.avatars === "object" ? parsed.avatars : {},
-      posts: (Array.isArray(parsed.posts) ? parsed.posts : base.posts).map(normalizePost),
-      visits: Array.isArray(parsed.visits) ? parsed.visits.slice(0, 30) : []
-    };
-  } catch (err) {
-    console.warn("读取本地数据失败，使用空白空间", err);
-    return defaultState();
-  }
+  if (!memory) memory = defaultState();
+  return memory;
+}
+
+async function persist(snapshot) {
+  const response = await fetch("/api/space", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(snapshot)
+  });
+  if (!response.ok) throw new Error("没能写到 data/space.json");
+}
+
+function queueSave() {
+  pending = true;
+  if (writing) return;
+  writing = true;
+  const flush = async () => {
+    try {
+      while (pending) {
+        const snapshot = JSON.parse(JSON.stringify(memory));
+        pending = false;
+        await persist(snapshot);
+      }
+    } catch (err) {
+      console.warn(err);
+      window.dispatchEvent(new CustomEvent("space-save-error"));
+    } finally {
+      writing = false;
+      if (pending) queueSave();
+    }
+  };
+  flush();
 }
 
 export function save(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  memory = state;
+  queueSave();
+}
+
+export async function hydrate() {
+  let fromFile = null;
+  try {
+    const response = await fetch("/api/space");
+    if (response.ok) fromFile = await response.json();
+  } catch (err) {
+    console.warn("读取 data/space.json 失败", err);
+  }
+  const raw = localStorage.getItem(STORAGE_KEY);
+  const fromBrowser = raw ? normalize(JSON.parse(raw)) : null;
+
+  if (fromFile && Array.isArray(fromFile.posts)) {
+    memory = normalize(fromFile);
+    // 文件可能是另一台浏览器先写出来的，密钥还在当前浏览器里时补上。
+    if (fromBrowser && !memory.settings.apiKey && fromBrowser.settings.apiKey) {
+      memory.settings = { ...memory.settings, ...fromBrowser.settings };
+      if (fromBrowser.posts.length > memory.posts.length) memory.posts = fromBrowser.posts;
+      queueSave();
+    }
+    if (fromBrowser) localStorage.removeItem(STORAGE_KEY);
+    return { migrated: Boolean(fromBrowser && fromBrowser.settings.apiKey) };
+  }
+
+  if (fromBrowser) {
+    memory = fromBrowser;
+    queueSave();
+    localStorage.removeItem(STORAGE_KEY);
+    return { migrated: true };
+  }
+
+  memory = defaultState();
+  queueSave();
+  return { migrated: false };
 }
 
 // 读-改-写放在同一次同步调用里，避免请求回来时盖掉刚点的赞。
